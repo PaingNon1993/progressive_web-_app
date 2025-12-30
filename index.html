@@ -1,10 +1,10 @@
+</html>
 <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="utf-8"/>
     <title>Scanner Pro</title>
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Scanner Pro">
@@ -12,48 +12,410 @@
     <link rel="manifest" href="manifest.webmanifest">
     
     <link rel="apple-touch-icon" href="icon-192.png">
-
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #222;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            text-align: center;
-        }
-        .btn-scan {
-            background-color: #2196F3;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 20px;
-            border-radius: 50px;
-            margin-top: 20px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+        #reader { width: 100%; border-radius: 0.5rem; overflow: hidden; border: none !important; background-color: #000; }
+        #reader video { object-fit: cover; width: 100% !important; height: 100% !important; border-radius: 0.5rem; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body>
+<body class="font-sans antialiased bg-slate-50 text-slate-900">
 
-    <h1>Scanner Pro</h1>
-    <p>พร้อมใช้งานในโหมดแนวนอน</p>
-    <button class="btn-scan" onclick="alert('เปิดกล้อง...')">เริ่มสแกน</button>
+    <main class="min-h-screen pb-20">
+        <div class="container mx-auto px-4 py-6 max-w-xl fade-in">
+            
+            <header class="mb-4 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800">Scanner Pro</h1>
+                    <span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Online Mode</span>
+                </div>
+                <button onclick="openShareModal()" class="text-slate-500 hover:text-blue-600 transition-colors p-2 rounded-full hover:bg-blue-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                </button>
+            </header>
+
+            <div id="status-bar" class="mb-4 bg-white border border-blue-100 rounded-xl p-3 flex items-center justify-between shadow-sm hidden">
+                <div class="flex flex-col">
+                    <span class="text-[10px] uppercase text-blue-400 font-bold tracking-wider">Storage Active</span>
+                    <span id="current-active-name" class="text-blue-800 font-bold text-lg truncate max-w-[150px]">...</span>
+                </div>
+                <button onclick="openSettings()" class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors">ตั้งค่า</button>
+            </div>
+
+            <div class="bg-white flex flex-col gap-4 rounded-2xl border border-slate-200 shadow-lg overflow-hidden relative z-10 mb-6">
+                <div class="p-3 bg-black relative">
+                    <div class="min-h-[250px] bg-slate-900 rounded-xl overflow-hidden relative border border-slate-700 flex items-center justify-center">
+                        <div id="reader" class="hidden w-full h-full"></div>
+                        <div id="camera-placeholder" class="text-center space-y-4 p-4 text-slate-500">
+                             <div class="flex justify-center gap-4 opacity-30">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 4v1m6 11h2m-6 0h-2v4h-4v-4H8m1-6V4m0 1h-1v1h1v-1zm4 1v1h-1v-1h1zm4 1h1v1h-1v-1zm-4-1v1h-1v-1h1zm-4-1h1v1h-1v-1zm-4 1h1v1h-1v-1z" /></svg>
+                            </div>
+                            <p class="text-xs font-light">กดปุ่มด้านล่างเพื่อสแกน</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-5 pb-6 space-y-3">
+                    <div class="flex gap-2">
+                        <button id="start-camera-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl shadow-md transition-all active:scale-95">เปิดกล้อง</button>
+                        <button id="stop-camera-btn" class="hidden flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded-xl shadow-md transition-all active:scale-95">ปิดกล้อง</button>
+                    </div>
+                    
+                    <form id="record-form" class="flex flex-col sm:flex-row gap-3">
+                        <input type="text" id="manual-input" class="w-full rounded-xl border-slate-200 border-2 px-4 py-3 focus:border-blue-500 focus:outline-none transition-colors text-lg" placeholder="กรอกรหัส...">
+                        <button type="submit" id="save-btn" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50 whitespace-nowrap">
+                            บันทึก
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+                <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                        ประวัติล่าสุด <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs" id="total-count">0</span>
+                    </h3>
+                    <button onclick="loadHistory()" class="text-xs text-blue-600 hover:text-blue-800 font-medium">รีเฟรช</button>
+                </div>
+                
+                <div id="history-loading" class="p-8 text-center text-slate-400 text-sm hidden">กำลังโหลด...</div>
+                <div id="history-empty" class="p-8 text-center text-slate-400 text-sm hidden">ยังไม่มีข้อมูลวันนี้</div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <tbody id="history-list" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mt-8 mb-4">
+                <details class="group bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden transition-all duration-300" id="settings-details">
+                    <summary class="list-none flex items-center cursor-pointer p-4 bg-slate-50 group-open:bg-blue-50 transition-colors">
+                        <span class="flex-1 font-bold text-slate-600 text-sm group-open:text-blue-700">⚙️ ตั้งค่าระบบ / เปลี่ยน Sheet</span>
+                        <span class="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="p-5 border-t border-slate-100 space-y-4">
+                         <div class="space-y-1">
+                             <label class="text-[10px] font-bold text-slate-400 uppercase">URL ของเว็บนี้ (GitHub)</label>
+                             <div class="flex gap-2">
+                                <input type="text" id="app-url-setting" class="flex-1 rounded border px-3 py-2 text-sm bg-slate-50 text-slate-500" placeholder="https://yourname.github.io/...">
+                                <button onclick="saveAppUrlSetting()" class="bg-slate-200 px-3 py-2 rounded text-xs font-bold hover:bg-slate-300">บันทึก</button>
+                             </div>
+                        </div>
+                        <hr class="border-slate-100">
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">เลือกคลังข้อมูล (Profiles)</label>
+                            <select id="config-select" onchange="onConfigChange()" class="w-full rounded border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"><option value="">-- สร้างใหม่ --</option></select>
+                        </div>
+                        <div class="grid grid-cols-1 gap-3">
+                            <input type="text" id="config-name" class="w-full rounded border px-3 py-2 text-sm" placeholder="ชื่อเรียก (เช่น สาขา 1)">
+                            <input type="text" id="config-id" class="w-full rounded border px-3 py-2 text-sm font-mono" placeholder="Google Sheet ID">
+                        </div>
+                        <div class="flex gap-3 pt-2">
+                            <button onclick="handleSaveConfig()" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2.5 rounded-lg shadow-sm transition-colors">บันทึก Sheet</button>
+                            <button onclick="handleDeleteConfig()" id="btn-delete" class="hidden px-4 py-2.5 bg-red-50 text-red-600 rounded-lg text-sm font-bold hover:bg-red-100">ลบ</button>
+                        </div>
+                    </div>
+                </details>
+            </div>
+            
+            <footer class="mt-8 text-center text-xs text-slate-400 pb-4">
+                Scanner Pro (GitHub Hosted)
+            </footer>
+        </div>
+    </main>
+
+    <div id="barcode-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center transform scale-100">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">Code View</h3>
+            <div class="flex justify-center mb-4 overflow-hidden bg-white p-2 rounded border border-slate-100">
+                <svg id="modal-barcode-display"></svg>
+            </div>
+            <div id="modal-qr-display" class="flex justify-center mb-4 hidden"></div>
+            <p id="modal-code-text" class="text-2xl font-mono font-bold text-blue-600 mb-6 tracking-wide select-all"></p>
+            <button onclick="document.getElementById('barcode-modal').classList.add('hidden')" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold">ปิดหน้าต่าง</button>
+        </div>
+    </div>
+
+    <audio id="beep-sound" src="./beep.mp3" preload="auto"></audio>
 
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then((reg) => console.log('Service Worker Registered!', reg.scope))
-                    .catch((err) => console.log('Service Worker Failed:', err));
+        // =========================================================================
+        // ⚠️ ใส่ URL Google Apps Script ของคุณ ⚠️
+        // =========================================================================
+        const API_URL = "https://script.google.com/macros/s/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/exec"; 
+        
+        // --- Variables ---
+        let savedConfigs = []; 
+        let activeId = "";
+        let savedAppUrl = "";
+        let isProcessing = false;
+        let html5QrCode = null;
+
+        const inputField = document.getElementById('manual-input');
+        const saveBtn = document.getElementById('save-btn');
+        const historyList = document.getElementById('history-list');
+
+        // --- Core Functions ---
+        async function callAPI(action, data = {}) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: action, data: data })
+                });
+                return await response.json();
+            } catch (error) {
+                console.error("Connection Error:", error);
+                return { success: false, error: "เชื่อมต่อ Server ไม่ได้" };
+            }
+        }
+
+        async function initSystem() {
+            Swal.fire({ title: 'เชื่อมต่อ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            const res = await callAPI('getConfig');
+            Swal.close();
+
+            if(res.configs) {
+                savedConfigs = JSON.parse(res.configs);
+                activeId = res.activeId;
+                savedAppUrl = res.appUrl || "";
+                if(savedAppUrl) document.getElementById('app-url-setting').value = savedAppUrl;
+                reloadConfigs();
+                if(activeId) loadHistory();
+            }
+        }
+
+        async function handleSave(code) {
+            if(!code) return;
+            isProcessing = true; 
+            saveBtn.disabled = true; 
+            saveBtn.innerHTML = '<span class="animate-spin">↻</span>'; 
+            
+            const res = await callAPI('saveCode', code);
+            
+            isProcessing = false; 
+            saveBtn.disabled = false; 
+            saveBtn.innerText = 'บันทึก';
+
+            if (res.success) {
+                Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 }).fire({ icon: 'success', title: 'บันทึกแล้ว' });
+                inputField.value = '';
+                loadHistory();
+            } else if (res.duplicate) {
+                Swal.fire({ title: 'ข้อมูลซ้ำ!', text: `รหัส ${res.code} มีอยู่แล้ว`, icon: 'warning' });
+                inputField.value = '';
+            } else {
+                Swal.fire('Error', res.error || 'Unknown Error', 'error');
+            }
+        }
+
+        async function loadHistory() {
+            if(!activeId) return;
+            document.getElementById('history-loading').classList.remove('hidden');
+            document.getElementById('history-empty').classList.add('hidden');
+            historyList.innerHTML = '';
+
+            const res = await callAPI('getHistory');
+            
+            document.getElementById('history-loading').classList.add('hidden');
+            document.getElementById('total-count').innerText = res.total || 0;
+            
+            if(!res.history || res.history.length === 0) {
+                document.getElementById('history-empty').classList.remove('hidden');
+                return;
+            }
+
+            res.history.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-100";
+                tr.innerHTML = `
+                    <td class="px-5 py-4 align-top">
+                        <div class="font-bold text-slate-800 text-lg break-all cursor-pointer hover:text-blue-600 flex items-center gap-2" onclick="showBarcodeModal('${item.code}')">
+                            ${item.code}
+                            <span class="text-xs bg-slate-100 text-slate-400 px-1 rounded border border-slate-200">VIEW</span>
+                        </div>
+                        <div class="text-xs text-slate-400 mt-1">${formatDate(item.time)}</div>
+                    </td>
+                    <td class="px-2 py-4 text-right align-top w-16">
+                        <button onclick="deleteHistory('${item.row}')" class="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">🗑️</button>
+                    </td>
+                `;
+                historyList.appendChild(tr);
             });
         }
+        
+        function formatDate(dateStr) {
+            try { return new Date(dateStr).toLocaleString('th-TH', { hour: '2-digit', minute:'2-digit', second:'2-digit', day:'numeric', month:'short' }); } 
+            catch(e) { return dateStr; }
+        }
+
+        function deleteHistory(row) {
+            Swal.fire({ 
+                title: 'ยืนยันลบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก'
+            }).then(async (r) => {
+                if(r.isConfirmed) {
+                    Swal.showLoading();
+                    await callAPI('deleteHistory', row);
+                    Swal.close();
+                    loadHistory();
+                }
+            });
+        }
+
+        // --- Configs & Settings ---
+        async function handleSaveConfig() { 
+            const name = document.getElementById('config-name').value; 
+            const id = document.getElementById('config-id').value;
+            const idx = document.getElementById('config-select').value;
+            if(!name || !id) { Swal.fire('ข้อมูลไม่ครบ', 'ใส่ชื่อและ ID ให้ครบ', 'error'); return; }
+            
+            if(idx !== "") savedConfigs[idx] = {name, id}; else savedConfigs.push({name, id});
+            
+            Swal.showLoading();
+            await callAPI('saveConfig', { configs: savedConfigs, id: id });
+            Swal.close();
+            activeId = id; reloadConfigs(); loadHistory();
+            Swal.fire('Saved', 'บันทึกการตั้งค่าแล้ว', 'success');
+        }
+        
+        async function handleDeleteConfig() {
+             const idx = document.getElementById('config-select').value;
+             if(idx === "") return;
+             savedConfigs.splice(idx, 1);
+             if(savedConfigs.length === 0) activeId = ""; else activeId = savedConfigs[0].id;
+             await callAPI('saveConfig', { configs: savedConfigs, id: activeId }); reloadConfigs();
+        }
+
+        function reloadConfigs() {
+            const sel = document.getElementById('config-select'); 
+            sel.innerHTML = '<option value="">-- สร้างใหม่ --</option>';
+            const statusBar = document.getElementById('status-bar');
+            let found = false;
+            savedConfigs.forEach((c,i) => { 
+                const opt = document.createElement('option'); opt.value = i; opt.text = c.name; 
+                if(c.id === activeId) { opt.selected = true; document.getElementById('current-active-name').innerText = c.name; statusBar.classList.remove('hidden'); found = true; }
+                sel.appendChild(opt); 
+            });
+            if(!found) statusBar.classList.add('hidden');
+            onConfigChange();
+        }
+
+        function onConfigChange() {
+            const idx = document.getElementById('config-select').value;
+            if(idx !== "") {
+                const cfg = savedConfigs[idx];
+                document.getElementById('config-name').value = cfg.name;
+                document.getElementById('config-id').value = cfg.id;
+                document.getElementById('btn-delete').classList.remove('hidden');
+            } else {
+                document.getElementById('config-name').value = ""; document.getElementById('config-id').value = "";
+                document.getElementById('btn-delete').classList.add('hidden');
+            }
+        }
+
+        async function saveAppUrlSetting() {
+            const url = document.getElementById('app-url-setting').value;
+            await callAPI('saveAppUrl', url);
+            savedAppUrl = url;
+            Swal.fire('Saved', 'บันทึก URL เรียบร้อย', 'success');
+        }
+
+        function openSettings() { const details = document.getElementById('settings-details'); details.open = true; details.scrollIntoView({behavior: "smooth"}); }
+
+        // --- 🔊 Sound Function ---
+        function playBeep() { 
+            const audio = document.getElementById('beep-sound');
+            if(audio) {
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log('Audio Autoplay Blocked:', e));
+            }
+        }
+
+        // --- Camera & Modal ---
+        document.getElementById('start-camera-btn').addEventListener('click', () => {
+            document.getElementById('camera-placeholder').classList.add('hidden');
+            document.getElementById('reader').classList.remove('hidden');
+            document.getElementById('start-camera-btn').classList.add('hidden');
+            document.getElementById('stop-camera-btn').classList.remove('hidden');
+
+            // Trigger audio once to unlock autoplay policy on iOS/Android
+            playBeep(); 
+
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 }, 
+                (txt) => { if(!isProcessing) { playBeep(); inputField.value = txt; handleSave(txt); } },
+                (err) => {}
+            ).catch(err => {
+                Swal.fire('Camera Error', 'ไม่สามารถเปิดกล้องได้', 'error');
+                resetCam();
+            });
+        });
+
+        document.getElementById('stop-camera-btn').addEventListener('click', () => { if(html5QrCode) html5QrCode.stop().then(resetCam).catch(resetCam); else resetCam(); });
+        function resetCam() { document.getElementById('reader').classList.add('hidden'); document.getElementById('camera-placeholder').classList.remove('hidden'); document.getElementById('stop-camera-btn').classList.add('hidden'); document.getElementById('start-camera-btn').classList.remove('hidden'); }
+
+        inputField.addEventListener('keydown', (e) => { if(e.key === 'Enter' && inputField.value) { e.preventDefault(); handleSave(inputField.value); } });
+        document.getElementById('record-form').addEventListener('submit', (e) => { e.preventDefault(); });
+
+        function showBarcodeModal(code) {
+            const modal = document.getElementById('barcode-modal');
+            const svg = document.getElementById('modal-barcode-display');
+            const qrDiv = document.getElementById('modal-qr-display');
+            document.getElementById('modal-code-text').innerText = code;
+            modal.classList.remove('hidden');
+            
+            try {
+                svg.style.display = 'block'; qrDiv.style.display = 'none'; qrDiv.innerHTML = '';
+                JsBarcode(svg, code, { format: "CODE128", lineColor: "#000", width: 2, height: 60, displayValue: false });
+            } catch (e) {
+                svg.style.display = 'none'; qrDiv.style.display = 'flex';
+                new QRCode(qrDiv, { text: code, width: 150, height: 150 });
+            }
+        }
+
+        function openShareModal() {
+            const targetUrl = savedAppUrl || window.location.href;
+            Swal.fire({
+                title: 'แชร์ระบบบันทึก',
+                html: `
+                    <div class="flex flex-col items-center gap-5 mt-2">
+                        <div id="share-qrcode" class="border-4 border-white shadow-lg rounded-xl overflow-hidden bg-white p-2"></div>
+                        <div class="w-full space-y-2 text-left">
+                            <label class="text-[10px] text-slate-400 font-bold uppercase tracking-wider pl-1">ลิงก์ใช้งาน</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="share-link-input" value="${targetUrl}" readonly class="flex-1 bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                                <button onclick="copyShareLink()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm whitespace-nowrap">คัดลอก</button>
+                            </div>
+                        </div>
+                    </div>`,
+                showConfirmButton: false, showCloseButton: true, customClass: { popup: 'rounded-2xl w-full max-w-sm font-sans' },
+                didOpen: () => {
+                    document.getElementById("share-qrcode").innerHTML = "";
+                    new QRCode(document.getElementById("share-qrcode"), { text: targetUrl, width: 160, height: 160, colorDark : "#1e293b", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
+                }
+            });
+        }
+
+        function copyShareLink() {
+            const copyText = document.getElementById("share-link-input");
+            copyText.select(); copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                const btn = document.querySelector('button[onclick="copyShareLink()"]'); const oldText = btn.innerText;
+                btn.innerText = "เรียบร้อย!"; btn.classList.add('bg-green-600');
+                setTimeout(()=>{ btn.innerText = oldText; btn.classList.remove('bg-green-600'); }, 2000);
+            });
+        }
+
+        initSystem();
     </script>
 </body>
 </html>
